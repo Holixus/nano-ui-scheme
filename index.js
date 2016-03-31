@@ -134,7 +134,7 @@ function UiScheme(ui) {
 }
 
 UiScheme.prototype = {
-	validate: function (ui_root) {
+	process: function (ui_root) {
 		var common_rules = this.common_rules;
 
 		function match(up_rules, ui, matched, optional) {
@@ -202,7 +202,8 @@ UiScheme.prototype = {
 			}
 		}
 
-		return walk([this.root_rules], ui_root);
+		walk([this.root_rules], ui_root);
+		return ui_root;
 	}
 };
 

@@ -265,7 +265,7 @@ menu\n\
 					test(json.str2str(ui_text), function (done) {
 						var ui = ui_parser(ui_text);
 						try {
-							scheme.validate(ui);
+							scheme.process(ui);
 							done();
 						} catch (e) {
 							done(e);
@@ -279,7 +279,7 @@ menu\n\
 					test(json.str2str(ui_text), function (done) {
 						var ui = ui_parser(ui_text);
 						try {
-							scheme.validate(ui);
+							scheme.process(ui);
 							done(Error('not failed'));
 						} catch (e) {
 							done();
