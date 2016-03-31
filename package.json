@@ -1,0 +1,38 @@
+{
+  "name": "nano-ui-scheme",
+  "version": "1.0.0",
+  "description": "UI-files scheme compiler and validator",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --reporter spec -u tdd",
+    "test-cov": "istanbul cover node_modules/mocha/bin/_mocha -- --reporter dot -u tdd",
+    "test-travis": "istanbul cover node_modules/mocha/bin/_mocha --report lcovonly -- --reporter dot -u tdd"
+  },
+  "dependencies": {
+    "nano-ui-parser": "1.1"
+  },
+  "devDependencies": {
+    "core-assert": "0",
+    "clone": "1",
+    "nano-timer": "1",
+    "nano-fs": "1",
+    "nano-json": "1",
+    "mocha": "2",
+    "colors": "0",
+    "istanbul": "0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Holixus/nano-ui-scheme.git"
+  },
+  "keywords": [
+    "ui-files",
+    "ui-scheme"
+  ],
+  "author": "Vladimir Antonov <me@holix.ru>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Holixus/nano-ui-scheme/issues"
+  },
+  "homepage": "https://github.com/Holixus/nano-ui-scheme#readme"
+}

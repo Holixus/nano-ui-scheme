@@ -1,0 +1,11 @@
+lex ID [a-z0-9_/-]+
+
+rule group|page|module ID
+
+rule group|menu
+	children group|page
+
+rule page
+	children module
+
+root-rule menu

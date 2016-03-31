@@ -1,0 +1,13 @@
+
+lex LEXIDS         [A-Z0-9_-]+(?:|[A-Z0-9_-]+)*
+lex TAGS|CHILDREN  [a-zA-Z0-9_-]+(?:|[a-zA-Z0-9_-]+)*
+lex SP             \s+
+lex ARGUMENTS      .+
+
+rule lex LEXIDS SP ARGUMENTS
+
+rule rule TAGS SP ARGUMENTS
+	children rule
+	rule children TAGS
+
+root-rule lex | root-rule | rule
