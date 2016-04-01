@@ -101,7 +101,8 @@ suite('compile to parser', function () {
 	var res = {
 			ID: /[a-zA-Z0-9_-]+|/g,
 			SP: /\s+|/g,
-			ANY:/.+|/g
+			ANY:/.+|/g,
+			BOUNDS: /(-?\d{1,5})\.\.(-?\d{1,5})|/g
 		},
 	    text = 'ID SP ANY',
 	    lex = new ArgsParser(text, res).toFunction(),
@@ -138,7 +139,8 @@ suite('compile to parser 2', function () {
 	var res = {
 			ID: /[a-zA-Z0-9_-]+|/g,
 			SP: /\s+|/g,
-			ANY:/.+|/g
+			ANY:/.+|/g,
+			BOUNDS: /(-?\d{1,5})\.\.(-?\d{1,5})|/g
 		},
 	    text = 'ID (SP ANY)?',
 	    lex = new ArgsParser(text, res).toFunction(),
@@ -176,7 +178,8 @@ suite('compile to parser 3', function () {
 			ID: /[a-zA-Z0-9_-]+|/g,
 			SP: /\s+|/g,
 			VALUE: /\d+|/g,
-			ANY:/.+|/g
+			ANY:/.+|/g,
+			BOUNDS: /(-?\d{1,5})\.\.(-?\d{1,5})|/g
 		},
 	    text = 'ID SP VALUE SP ANY',
 	    lex = new ArgsParser(text, res).toFunction(),
@@ -208,3 +211,46 @@ suite('compile to parser 3', function () {
 		'[]', SyntaxError
 	]);
 });
+
+suite('compile to parser 4', function () {
+	var res = {
+			ID: /[a-zA-Z0-9_-]+|/g,
+			SP: /\s+|/g,
+			VALUE: /\d+|/g,
+			ANY:/.+|/g,
+			BOUNDS: /(-?\d{1,5})\.\.(-?\d{1,5})|/g
+		},
+	    text = 'ID SP BOUNDS SP ANY',
+	    lex = new ArgsParser(text, res).toFunction(),
+	    tester = function (text) {
+	    	var c = lex(text);
+	    	if (c.error)
+	    		throw c.error;
+	    	return c;
+	    };
+
+	//console.log(text);
+	//console.log(lex);
+	//console.log(tester.toString());
+
+	massive('good expressions ['+text+']', tester, [
+		'SOME-ID 1..77 {}', { length:16, ID: 'SOME-ID', SP:' ', BOUNDS:['1','77'], ANY:'{}' },
+		'SOME-ID -16..15 {}', { length:18, ID: 'SOME-ID', SP:' ', BOUNDS:['-16','15'], ANY:'{}' }
+	]);
+
+	massive_fails('bad expressions ['+text+']', tester, [
+		'', SyntaxError,
+		'aa', SyntaxError,
+		'>$>', SyntaxError,
+		'>a.>', SyntaxError,
+		'sdf 11', SyntaxError,
+		'sdf 11..', SyntaxError,
+		'sdf ..11', SyntaxError,
+		'ID (SP OLO?', SyntaxError,
+		'ID (?', SyntaxError,
+		Object.create(null), TypeError,
+		'A[]', SyntaxError,
+		'[]', SyntaxError
+	]);
+});
+
