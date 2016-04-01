@@ -91,9 +91,7 @@ function UiScheme(ui) {
 					ui_rule(snode, sub);
 					break;
 				default:
-					var e = SyntaxError('not allowed node type: ['+snode.id+'] in the row '+snode.srow);
-					e.ui = snode;
-					throw e;
+					throw SyntaxError('not allowed node type: ['+snode.id+'] in the row '+snode.srow);
 				}
 			});
 		return sub;
@@ -134,7 +132,7 @@ function UiScheme(ui) {
 }
 
 UiScheme.prototype = {
-	process: function (ui_root) {
+	process: function (ui_root, validate) {
 		var common_rules = this.common_rules;
 
 		function match(up_rules, ui, matched, optional) {
@@ -153,12 +151,11 @@ UiScheme.prototype = {
 						//if (ui.args === undefined)
 							//throw SyntaxError('missing node('+tag+') arguments in row '+ui.srow);
 						if (typeof ui.args !== 'object') {
-							ui.args = rule.args(ui.args || '');
-							if (ui.args.error) {
-								var e = SyntaxError('arguments syntax error in row '+ui.srow);
-								e.ui = ui;
-								throw e;
-							}
+							var args = rule.args(ui.args || '');
+							if (args.error)
+								throw SyntaxError('arguments syntax error in row '+ui.srow);
+							if (!validate)
+								ui.args = args;
 						}
 					}
 					has_matches = 1;
@@ -191,11 +188,8 @@ UiScheme.prototype = {
 			for (var i = 0, n = children.length; i < n; ++i) {
 				var child = children[i],
 				    matched = [];
-				if (!match(rules, child, matched)) {
-					var e = Error('invalid ui-node "'+child.id+'" in row '+child.srow);
-					e.ui = child;
-					throw e;
-				}
+				if (!match(rules, child, matched))
+					throw Error('invalid ui-node "'+child.id+'" in row '+child.srow);
 				match([common_rules], child, matched, 1);
 
 				walk(matched, child);

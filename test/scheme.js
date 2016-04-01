@@ -279,7 +279,7 @@ menu\n\
 					test(json.str2str(ui_text), function (done) {
 						var ui = ui_parser(ui_text);
 						try {
-							scheme.process(ui);
+							scheme.process(ui, 1);
 							done(Error('not failed'));
 						} catch (e) {
 							done();
