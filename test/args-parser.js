@@ -254,3 +254,42 @@ suite('compile to parser 4', function () {
 	]);
 });
 
+suite('compile to parser 5', function () {
+	var res = {
+			ID: /[a-zA-Z0-9_-]+|/g,
+			SP: /\s+|/g,
+			VALUE: /\d+|/g,
+			ANY:/.+|/g,
+			BOUNDS: /(-?\d{0,5})\.\.(-?\d{0,5})|/g
+		},
+	    text = 'ID? (SP BOUNDS)? (SP ANY)?',
+	    lex = new ArgsParser(text, res).toFunction(),
+	    tester = function (text) {
+	    	var c = lex(text);
+	    	if (c.error)
+	    		throw c.error;
+	    	return c;
+	    };
+
+	//console.log(text);
+	//console.log(lex);
+	//console.log(tester.toString());
+
+	massive('good expressions ['+text+']', tester, [
+		'SOME-ID 1..77 {}', { length:16, ID: 'SOME-ID', SP:' ', BOUNDS:['1','77'], ANY:'{}' },
+		'SOME-ID -16..15 {}', { length:18, ID: 'SOME-ID', SP:' ', BOUNDS:['-16','15'], ANY:'{}' },
+		'SOME-ID ..15 {}', { length:15, ID: 'SOME-ID', SP:' ', BOUNDS:['','15'], ANY:'{}' },
+		'SOME-ID 15.. {}', { length:15, ID: 'SOME-ID', SP:' ', BOUNDS:['15',''], ANY:'{}' },
+		'', { length:0 },
+		'aa', { length:2, ID: 'aa' }
+	]);
+
+	massive_fails('bad expressions ['+text+']', tester, [
+		'>$>', SyntaxError,
+		'>a.>', SyntaxError,
+		Object.create(null), TypeError,
+		'A[]', SyntaxError,
+		'[]', SyntaxError
+	]);
+});
+

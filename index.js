@@ -153,7 +153,7 @@ UiScheme.prototype = {
 						if (typeof ui.args !== 'object') {
 							var args = rule.args(ui.args || '');
 							if (args.error)
-								throw SyntaxError('arguments syntax error in row '+ui.srow);
+								throw SyntaxError('node ['+tag+'] arguments error in the row '+ui.srow);
 							if (!validate)
 								ui.args = args;
 						}
