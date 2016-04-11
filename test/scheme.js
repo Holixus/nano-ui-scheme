@@ -55,7 +55,21 @@ suite('parsing', function () {
 			.then(function (ui_text) {
 				var ui = ui_parser(ui_text),
 				    scheme = new UiScheme(ui);
-				//console.log(json.render(scheme));
+				assert.strictEqual(scheme.toString(), "\
+lex LEXIDS [A-Z0-9_-]+(?:|[A-Z0-9_-]+)*\n\
+lex TAGS [a-zA-Z0-9_-]+(?:|[a-zA-Z0-9_-]+)*\n\
+lex CHILDREN [a-zA-Z0-9_-]+(?:|[a-zA-Z0-9_-]+)*\n\
+lex SP \\s+\n\
+lex ARGUMENTS .+\n\
+\n\
+rule lex LEXIDS SP ARGUMENTS\n\
+\n\
+rule rule TAGS SP ARGUMENTS\n\
+	rule rule\n\
+	rule children TAGS\n\
+\n\
+root-rule lex|root-rule|rule\n\
+");
 				done();
 			}).catch(done);
 	});
@@ -291,3 +305,4 @@ menu\n\
 	});
 
 });
+

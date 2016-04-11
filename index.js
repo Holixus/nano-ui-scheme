@@ -10,6 +10,7 @@ var TAGS = /[a-zA-Z0-9_-]+(?:\s*\|\s*[a-zA-Z0-9_-]+)*|/g,
 function Rule(tags, args) {
 	this.tags = tags;
 	this.args = args;
+	this.argsStr = args;
 	this.rules = undefined;
 }
 Rule.prototype = {
@@ -34,7 +35,7 @@ Rule.prototype = {
 function UiScheme(ui) {
 	var common_rules = this.common_rules = new Rule([], ''),
 	    root_rules = this.root_rules = new Rule([], ''),
-	    s_lexemes = {},
+	    s_lexemes = this.lexemes = {},
 	    args_parsers = {};
 
 	if (!ui.children)
@@ -119,9 +120,7 @@ function UiScheme(ui) {
 	});
 
 	for (var id in args_parsers)
-		args_parsers[id] = args_parsers[id].toFunction(s_lexemes);
-
-	s_lexemes = 0;
+		args_parsers[id] = args_parsers[id].toFunction();
 
 	common_rules.enum(function (rule) {
 		rule.args = args_parsers[rule.args];
@@ -168,19 +167,6 @@ UiScheme.prototype = {
 		function walk(rules, ui) {
 			var tag = ui.id;
 
-//			if (!ui.children)
-//				return typeof ui.args !== 'string'; // arguments is not parsed
-
-			// 1. Если детей нет, то узел проверку прошёл
-
-			// 2. Для каждого из детей узла провести эту процедуру
-
-			// 2.1 поискать среди цепочек
-			// 2.1.1 если цепочки не сработали, то этот узел не на своём месте
-			// 2.1.2 сработавшие цепочки сохранить
-			// 2.2 поискать общие правила
-			// 2.2.1 сработавшие общие правила добавить в цепочки
-
 			if (!ui.children)
 				return 1;
 
@@ -198,6 +184,31 @@ UiScheme.prototype = {
 
 		walk([this.root_rules], ui_root);
 		return ui_root;
+	},
+
+	toString: function () {
+		var s = '';
+		// lexemes
+		for (var id in this.lexemes)
+			s += 'lex '+id+' ' + this.lexemes[id].toString().replace(/^\/(.*)\|\/g$/,'$1') + '\n';
+		function rule2str(rule, indent, type, before) {
+			if (!rule.rules)
+				return;
+			var sub_indent = indent + '\t';
+			rule.rules.forEach(function (sub) {
+				s += before + indent + type + ' ' + sub.tags.join('|');
+				if (sub.argsStr)
+					s += ' ' + sub.argsStr;
+				s += '\n';
+				rule2str(sub, sub_indent, 'rule', '');
+			});
+		}
+		// common rules
+		rule2str(this.common_rules, '', 'rule', '\n');
+		// root rules
+		rule2str(this.root_rules, '', 'root-rule', '\n');
+
+		return s;
 	}
 };
 

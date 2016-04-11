@@ -280,6 +280,7 @@ suite('compile to parser 5', function () {
 		'SOME-ID -16..15 {}', { length:18, ID: 'SOME-ID', SP:' ', BOUNDS:['-16','15'], ANY:'{}' },
 		'SOME-ID ..15 {}', { length:15, ID: 'SOME-ID', SP:' ', BOUNDS:['','15'], ANY:'{}' },
 		'SOME-ID 15.. {}', { length:15, ID: 'SOME-ID', SP:' ', BOUNDS:['15',''], ANY:'{}' },
+		'kklk 0..1 { visible: "method !== \'disabled\'" }', { length:46, ID: 'kklk', SP:' ', BOUNDS:['0','1'], ANY:'{ visible: "method !== \'disabled\'" }' },
 		'', { length:0 },
 		'aa', { length:2, ID: 'aa' }
 	]);
