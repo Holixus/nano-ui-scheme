@@ -1,11 +1,12 @@
 
 
-var ArgsParser = require('./lib/args-parser.js');
+var DefsLib = require('./lib/defs.js');
 
-var TAGS = /[a-zA-Z0-9_-]+(?:\s*\|\s*[a-zA-Z0-9_-]+)*|/g,
+var TAGS = /([a-zA-Z0-9_-]+(?:\s*\|\s*[a-zA-Z0-9_-]+)*)|/g,
+    ID = /([a-zA-Z0-9_-]+)|/g,
 	SP = /\s+|/g,
-	ANY = /.+/g,
-	LEXIDs = /[A-Z0-9_-]+(?:\s*\|\s*[A-Z0-9_-]+)*|/g;
+	ANY = /(.+)|/g,
+	LEXIDs = /([A-Za-z0-9_-]+(?:\s*\|\s*[A-Za-z0-9_-]+)*)|/g;
 
 function Rule(tags, args) {
 	this.tags = tags;
@@ -35,7 +36,7 @@ Rule.prototype = {
 function UiScheme(ui) {
 	var common_rules = this.common_rules = new Rule([], ''),
 	    root_rules = this.root_rules = new Rule([], ''),
-	    s_lexemes = this.lexemes = {},
+	    defs = this.defs = new DefsLib(),
 	    args_parsers = {};
 
 	if (!ui.children)
@@ -56,10 +57,64 @@ function UiScheme(ui) {
 		var any = ANY.exec(text);
 		if (!any || !any[0])
 			throw SyntaxError('lex: missed regexp in the row '+node.srow);
-		var re = new RegExp(any[0]+'|', 'g');
-		lexids[0].split(/\s*\|\s*/).forEach(function (id) {
-			s_lexemes[id] = re;
-		});
+		defs.lex(lexids[0], any[0]);
+		if (node.children)
+			throw Error(node.id+': has children nodes in the row '+node.srow);
+	}
+
+	function def_seq(node, def) {
+		if (!node.args)
+			throw SyntaxError(node.id+': missed sequence text in the row '+node.srow);
+		def.seq(node.args);
+		if (node.children)
+			throw Error(node.id+': has children nodes in the row '+node.srow);
+	}
+	function def_case(node, def) {
+		// TAGS SP ANY
+		var node_args = node.args;
+		if (!node_args)
+			throw SyntaxError(node.id+': missed TAGS list in the row '+node.srow);
+		TAGS.lastIndex = 0;
+		var tags = TAGS.exec(node_args);
+		if (!tags || !tags[0])
+			throw SyntaxError(node.id+': bad TAGS list in the row '+node.srow);
+		SP.lastIndex = TAGS.lastIndex;
+		SP.exec(node_args);
+		ANY.lastIndex = SP.lastIndex;
+		var any = ANY.exec(node_args);
+		//if (!any || !any[1])
+			//throw SyntaxError(node.id+': missed case expression in the row '+node.srow);
+		def['case'](tags[0], any && any[1] || '');
+		if (node.children)
+			throw Error(node.id+': has children nodes in the row '+node.srow);
+	}
+
+	function ui_def(node) {
+		var node_args = node.args;
+		if (!node_args)
+			throw SyntaxError(node.id+': missed ID in the row '+node.srow);
+		ID.lastIndex = 0;
+		var id = ID.exec(node_args);
+		if (!id || !id[0])
+			throw SyntaxError(node.id+': bad ID in the row '+node.srow);
+		if (ID.lastIndex < node_args.length)
+			throw SyntaxError(node.id+': extra symbols after ID in the row '+node.srow);
+
+		var def = defs.def(id[1]);
+
+		if (node.children)
+			node.children.forEach(function (snode) {
+				switch (snode.id) {
+				case 'seq':
+					def_seq(snode, def);
+					break;
+				case 'case':
+					def_case(snode, def);
+					break;
+				default:
+					throw SyntaxError('not allowed node type: ['+snode.id+'] in the row '+snode.srow);
+				}
+			});
 	}
 
 	function ui_rule(node, rule) {
@@ -75,8 +130,8 @@ function UiScheme(ui) {
 		SP.exec(node_args);
 		ANY.lastIndex = SP.lastIndex;
 		var any = ANY.exec(node_args);
-		if (any) {
-			var parser = (new ArgsParser(any[0], s_lexemes)),
+		if (any && any[0]) {
+			var parser = defs.seq(any[0]),
 			    args = parser.toString();
 			if (!(args in args_parsers))
 				args_parsers[args] = parser;
@@ -104,6 +159,10 @@ function UiScheme(ui) {
 		switch (node.id) {
 		case 'lex':
 			ui_lex(node);
+			break;
+
+		case 'def':
+			ui_def(node);
 			break;
 
 		case 'rule':
@@ -150,11 +209,12 @@ UiScheme.prototype = {
 						//if (ui.args === undefined)
 							//throw SyntaxError('missing node('+tag+') arguments in row '+ui.srow);
 						if (typeof ui.args !== 'object') {
-							var args = rule.args(ui.args || '');
-							if (args.error)
-								throw SyntaxError('node ['+tag+'] arguments error in the row '+ui.srow);
+							var args = ui.args || '',
+							    o = rule.args(args);
+							if (o.error)
+								throw SyntaxError('node ['+tag+'] arguments('+args+') error in the row '+ui.srow + '('+o.error.message+')');
 							if (!validate)
-								ui.args = args;
+								ui.args = o;
 						}
 					}
 					has_matches = 1;
@@ -189,8 +249,9 @@ UiScheme.prototype = {
 	toString: function () {
 		var s = '';
 		// lexemes
-		for (var id in this.lexemes)
-			s += 'lex '+id+' ' + this.lexemes[id].toString().replace(/^\/(.*)\|\/g$/,'$1') + '\n';
+		var lexes = this.defs.lexemes;
+		for (var id in lexes)
+			s += 'lex '+id+' ' + lexes[id].toString().replace(/^\/(.*)\|\/g$/,'$1') + '\n';
 		function rule2str(rule, indent, type, before) {
 			if (!rule.rules)
 				return;

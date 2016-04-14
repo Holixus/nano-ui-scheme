@@ -1,11 +1,13 @@
-lex ID [a-z0-9_/-]+
+lex ID   ([a-z0-9_/-]+)
+lex SP   \s+
+lex OPTS (.+)
 
-rule group|page|module ID
+rule group|page|module ID (SP OPTS)?
 
 rule group|menu
 	children group|page
 
 rule page
-	children module
+	children module|use
 
 root-rule menu

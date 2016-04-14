@@ -56,19 +56,25 @@ suite('parsing', function () {
 				var ui = ui_parser(ui_text),
 				    scheme = new UiScheme(ui);
 				assert.strictEqual(scheme.toString(), "\
-lex LEXIDS [A-Z0-9_-]+(?:|[A-Z0-9_-]+)*\n\
-lex TAGS [a-zA-Z0-9_-]+(?:|[a-zA-Z0-9_-]+)*\n\
-lex CHILDREN [a-zA-Z0-9_-]+(?:|[a-zA-Z0-9_-]+)*\n\
+lex LEXIDS ([A-Za-z0-9_-]+(?:\\s*\\|\\s*[A-Za-z0-9_-]+)*)\n\
+lex DEFID ([A-Za-z0-9_-]+)\n\
+lex TAGS ([a-zA-Z0-9_-]+(?:\\s*\\|\\s*[a-zA-Z0-9_-]+)*)\n\
+lex CHILDREN ([a-zA-Z0-9_-]+(?:\\s*\\|\\s*[a-zA-Z0-9_-]+)*)\n\
 lex SP \\s+\n\
-lex ARGUMENTS .+\n\
+lex ARGUMENTS (.+)\n\
+lex ANY (.+)\n\
 \n\
 rule lex LEXIDS SP ARGUMENTS\n\
+\n\
+rule def DEFID\n\
+	rule seq ANY\n\
+	rule case TAGS SP ANY\n\
 \n\
 rule rule TAGS SP ARGUMENTS\n\
 	rule rule\n\
 	rule children TAGS\n\
 \n\
-root-rule lex|root-rule|rule\n\
+root-rule lex|root-rule|rule|def\n\
 ");
 				done();
 			}).catch(done);
@@ -95,9 +101,21 @@ root-rule lex|root-rule|rule\n\
 		'lex {}', SyntaxError,
 		'lex ID', SyntaxError,
 		'lex ID ', SyntaxError,
+		'lex ID a\n\tchild', Error,
 		'root-rule', SyntaxError,
 		'root-rule {}', SyntaxError,
 		'root-rule ogo sp', SyntaxError,
+		'def\nerere\n', SyntaxError,
+		'def >\nerere\n', SyntaxError,
+		'def erer {}\nerere\n', SyntaxError,
+		'def erer\nerere\n', SyntaxError,
+		'def erer\n\terer\n', SyntaxError,
+		'def erer\n\tcase\n', SyntaxError,
+		'def erer\n\tcase >\n', SyntaxError,
+		'def erer\n\tcase oo\n\t\tchild\n', Error,
+		'def erer\n\tseq\n', SyntaxError,
+		'def erer\n\tseq >\n', SyntaxError,
+		'lex ID a\ndef erer\n\tseq ID\n\t\tchild oo\n', Error,
 		'root-rule ogo\n\tnot\n', SyntaxError
 	]);
 });
@@ -105,26 +123,41 @@ root-rule lex|root-rule|rule\n\
 suite('schemes validation', function () {
 
 	var tests = [
-		[ '', // empty schema
+		[ '', // empty scheme
 			[ '' ], // correct ui
 			[ 'e' ] // bad ui text
 		],
-		[ 'root-rule node',
-			[ '', 'node' ],
-			[ 'o' ]
+
+		[ 'root-rule node', // scheme
+			[ '', 'node' ], // success samples
+			[ 'o' ]         // fail samples
 		],
-		[ 'lex ID [a-z][a-z0-9]+\nroot-rule node ID',
+
+		[ 'lex ID ([a-z][a-z0-9]*)\nroot-rule node ID', // scheme
 			[ '', 'node erer' ],
 			[ 'o', 'node', 'node @#@' ]
 		],
-		[ 'lex ID [a-z][a-z0-9]+\nroot-rule node ID\nrule node ID',
+
+		[ 'lex ID ([a-z][a-z0-9]*)\nroot-rule node ID\nrule node ID', // scheme
 			[ '', 'node erer' ],
 			[ 'o', 'node', 'node @#@' ]
 		],
+
 		[ '\
-lex ID [A-Za-z][A-Za-z0-9_-]+\n\
+lex IP|MASK  ([a-z][a-z0-9]*)\n\
+lex BR-OPEN  \\s*\\(\\s*\n\
+lex BR-CLOSE \\s*\\)\\s*\n\
+lex COMMA    \\s*,\\s*\n\
+root-rule node BR-OPEN IP COMMA MASK BR-CLOSE\n\
+	rule node',                         // scheme
+			[ '', 'node(ip,mask)' ],    // success samples
+			[ 'o', 'node', 'node @#@' ] // fail samples
+		],
+
+		[ '\
+lex ID ([A-Za-z][A-Za-z0-9_-]*)\n\
 lex SP \\s+\n\
-lex ANY .+\n\
+lex ANY (.+)\n\
 root-rule menu\n\
 rule menu\n\
 	rule group|page\n\
@@ -132,7 +165,7 @@ rule group ID\n\
 	rule page\n\
 rule page ID\n\
 	rule module ID\n\
-',
+',                              // scheme
 			[ '', '\n\
 menu\n\
 \n', '\
@@ -146,9 +179,11 @@ menu\n\
 		page sf\n\
 			module sdf\n\
 		page Aff\n\
+	group a\n\
+		page bbbbbb\n\
 	page ERE\n\
 		module wr23r4\n\
-' ],
+' ],                             // success samples
 			[ 'o', 'node', '\
 menu\n\
 	group id\n\
@@ -192,8 +227,9 @@ menu\n\
 		page Aff\n\
 	page ERE\n\
 		goup wr23r4\n\
-' ]
-		], [ '\
+' ] ],                                          // fail samples
+
+			[ '\
 lex ID [A-Za-z][A-Za-z0-9_-]+\n\
 lex SP \\s+\n\
 lex VALUE \\S+\n\
@@ -203,7 +239,7 @@ rule form\n\
 	rule text|ip|table ID (SP ANY)?\n\
 rule table ID\n\
 	rule text|ip ID SP VALUE (SP ANY)?\n\
-',
+',                                        // scheme
 			[ '', '\n\
 form\n\
 \n', '\
@@ -218,7 +254,7 @@ form\n\
 		text name 45545 { o:! }\n\
 		ip add 2323\n\
 	ip dffdf 3424\n\
-' ],
+' ],                                      // success samples
 			[ 'o', 'node', '\
 menu\n\
 	group id\n\
@@ -262,8 +298,54 @@ menu\n\
 		page Aff\n\
 	page ERE\n\
 		goup wr23r4\n\
-' ]
-		]
+' ] ],                                        // fail samples
+
+
+	[ '\
+lex ID ([a-z0-9_/-]+)\n\
+lex SP \\s+\n\
+lex COMMA ,\n\
+lex SLASH \\/\n\
+lex BR-OPEN \\(\n\
+lex BR-CLOSE \\)\n\
+lex OPTS (\\{.*\\})\n\
+lex VALUE ("(?:[^\\"]|\\\\[\\"])*"|\'(?:[^\\\']|\\\\[\\\'])*\'|[a-z0-9_-]+)\n\
+lex BOUNDS (-?\d{0,5}|)\.\.(-?\d{0,5}|)\n\
+\n\
+lex id|ip|mask|net-ip|net-mask|nets|begin|end|value|list|first|last|key1|key2|key3|key4|default-key ([a-z][a-z0-9_-]*)\n\
+\n\
+def validator\n\
+	case optional\n\
+	case is-host|is_net       SP? BR-OPEN SP? ip SP? COMMA SP? mask SP? BR-CLOSE\n\
+	case ip-in-net|is-gateway SP? BR-OPEN SP? ip SP? COMMA SP? net-ip SP? COMMA SP? net-mask SP? BR-CLOSE\n\
+	case in-nets|not-in-nets  SP? BR-OPEN SP? ip SP? COMMA SP? nets SP? BR-CLOSE\n\
+	case ip-pool              SP? BR-OPEN SP? begin SP? COMMA SP? end SP? COMMA SP? net-ip SP? COMMA SP? net-mask SP? BR-CLOSE\n\
+	case not-in-list          SP? BR-OPEN SP? value SP? COMMA SP? list SP? BR-CLOSE\n\
+	case le|lt|ge|gt          SP? BR-OPEN SP? id SP? BR-CLOSE\n\
+\n\
+def validators\n\
+	seq validator (SP? SLASH SP? validator)*\n\
+\n\
+rule field ID (SP validators)? (SP OPTS)?\n\
+\n\
+root-rule field\n\
+', [
+	'field ogog',
+	'field ogog {}',
+	'field ogog optional {}',
+	'field ogog lt(end-port) {}',
+	'field ogog lt(end-port)/optional {}',
+	'field ogog lt(end-port)/optional { visible: "oo === \'te\'" }'
+],
+[
+	'field >ogog',
+	'field ogog -{}',
+	'field ogog opional {}',
+	'field ogog lt(end+port) {}',
+	'field ogog lt(end-port),optional {}',
+	'field ogog lt(end-port)+optional { visible: "oo === \'te\'" }'
+]
+	]
 	];
 
 	tests.forEach(function (variant) {

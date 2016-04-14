@@ -10,7 +10,26 @@
 # nano-ui-scheme
 UI-files scheme compiler and validator
 
+## Scheme of ui-scheme
+```
+lex LEXIDS         ([A-Za-z0-9_-]+(?:\s*\|\s*[A-Za-z0-9_-]+)*)
+lex DEFID          ([A-Za-z0-9_-]+)
+lex TAGS|CHILDREN  ([a-zA-Z0-9_-]+(?:\s*\|\s*[a-zA-Z0-9_-]+)*)
+lex SP             \s+
+lex ARGUMENTS|ANY  (.+)
 
+rule lex LEXIDS SP ARGUMENTS
+
+rule def DEFID
+	rule seq ANY
+	rule case TAGS SP ANY
+
+rule rule TAGS SP ARGUMENTS
+	children rule
+	rule children TAGS
+
+root-rule lex | root-rule | rule | def
+```
 
 [bithound-image]: https://www.bithound.io/github/Holixus/nano-ui-scheme/badges/score.svg
 [bithound-url]: https://www.bithound.io/github/Holixus/nano-ui-scheme

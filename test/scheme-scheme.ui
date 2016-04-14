@@ -1,13 +1,18 @@
-
-lex LEXIDS         [A-Z0-9_-]+(?:|[A-Z0-9_-]+)*
-lex TAGS|CHILDREN  [a-zA-Z0-9_-]+(?:|[a-zA-Z0-9_-]+)*
+// scheme of scheme
+lex LEXIDS         ([A-Za-z0-9_-]+(?:\s*\|\s*[A-Za-z0-9_-]+)*)
+lex DEFID          ([A-Za-z0-9_-]+)
+lex TAGS|CHILDREN  ([a-zA-Z0-9_-]+(?:\s*\|\s*[a-zA-Z0-9_-]+)*)
 lex SP             \s+
-lex ARGUMENTS      .+
+lex ARGUMENTS|ANY  (.+)
 
 rule lex LEXIDS SP ARGUMENTS
+
+rule def DEFID
+	rule seq ANY
+	rule case TAGS SP ANY
 
 rule rule TAGS SP ARGUMENTS
 	children rule
 	rule children TAGS
 
-root-rule lex | root-rule | rule
+root-rule lex | root-rule | rule | def
