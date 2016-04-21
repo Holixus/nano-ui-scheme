@@ -382,10 +382,10 @@ suite('seq uses defs with cases', function () {
 
 	massive('good expressions ['+src+']', tester, [
 		'SOME-ID 123', { length:11, ID: 'SOME-ID', VALUE: '123' },
-		'SOME-ID optional 333', { length:20, ID: 'SOME-ID', VALUE: '333', opt:[ { tag:'optional' } ] },
-		'SOME-ID ascii 333', { length:17, ID: 'SOME-ID', VALUE: '333', opt:[ { tag:'ascii' } ] },
-		'SOME-ID ascii,optional 333', { length:26, ID: 'SOME-ID', VALUE: '333', opt:[ { tag:'ascii' }, { tag:'optional' } ] },
-		'SOME-ID optional,ascii 333', { length:26, ID: 'SOME-ID', VALUE: '333', opt:[ { tag:'optional' }, { tag:'ascii' } ] }
+		'SOME-ID optional 333', { length:20, ID: 'SOME-ID', VALUE: '333', opt:[ { case:'optional' } ] },
+		'SOME-ID ascii 333', { length:17, ID: 'SOME-ID', VALUE: '333', opt:[ { case:'ascii' } ] },
+		'SOME-ID ascii,optional 333', { length:26, ID: 'SOME-ID', VALUE: '333', opt:[ { case:'ascii' }, { case:'optional' } ] },
+		'SOME-ID optional,ascii 333', { length:26, ID: 'SOME-ID', VALUE: '333', opt:[ { case:'optional' }, { case:'ascii' } ] }
 	]);
 
 	massive_fails('bad expressions ['+src+']', tester, [
@@ -420,11 +420,11 @@ suite('seq uses defs with cases and seqs', function () {
 
 	massive('good expressions ['+src+']', tester, [
 		'SOME-ID 123', { length:11, ID: 'SOME-ID', VALUE: '123' },
-		'SOME-ID optional 333', { length:20, ID: 'SOME-ID', VALUE: '333', opt:[ { tag:'optional' } ] },
-		'SOME-ID ascii 333', { length:17, ID: 'SOME-ID', VALUE: '333', opt:[ { tag:'ascii' } ] },
-		'SOME-ID ascii,optional 333', { length:26, ID: 'SOME-ID', VALUE: '333', opt:[ { tag:'ascii' }, { tag:'optional' } ] },
-		'SOME-ID optional,ascii 333', { length:26, ID: 'SOME-ID', VALUE: '333', opt:[ { tag:'optional' }, { tag:'ascii' } ] },
-		'SOME-ID optional,aii 333', { length:24, ID: 'SOME-ID', VALUE: '333', opt:[ { tag:'optional' }, { ID:'aii' } ] }
+		'SOME-ID optional 333', { length:20, ID: 'SOME-ID', VALUE: '333', opt:[ { case:'optional' } ] },
+		'SOME-ID ascii 333', { length:17, ID: 'SOME-ID', VALUE: '333', opt:[ { case:'ascii' } ] },
+		'SOME-ID ascii,optional 333', { length:26, ID: 'SOME-ID', VALUE: '333', opt:[ { case:'ascii' }, { case:'optional' } ] },
+		'SOME-ID optional,ascii 333', { length:26, ID: 'SOME-ID', VALUE: '333', opt:[ { case:'optional' }, { case:'ascii' } ] },
+		'SOME-ID optional,aii 333', { length:24, ID: 'SOME-ID', VALUE: '333', opt:[ { case:'optional' }, { ID:'aii' } ] }
 	]);
 
 	massive_fails('bad expressions ['+src+']', tester, [
@@ -489,9 +489,9 @@ suite('seq uses defs with cases and seqs (WUI-validators)', function () {
 		'SOME-ID', { length:7, TAGS: 'SOME-ID' },
 		'SOME-ID { }', { length:11, TAGS: 'SOME-ID', ANY: '{ }' },
 		'SOME-ID qq { }', { length:14, TAGS: 'SOME-ID', ANY: 'qq { }' },
-		'SOME-ID optional { }', { length:20, TAGS: 'SOME-ID', ANY: '{ }', validators: { validator: [ { tag:'optional' }]} },
-		'SOME-ID is-net(ip,ip-mask) { }', { length:30, TAGS: 'SOME-ID', ANY: '{ }', validators: { validator: [ { tag:'is-net', ip:'ip', 'mask':'ip-mask' }]} },
-		'SOME-ID is-net(ip,ip-mask),optional { }', { length:39, TAGS: 'SOME-ID', ANY: '{ }', validators: { validator: [ { tag:'is-net', ip:'ip', 'mask':'ip-mask' }, { tag:'optional' }]} }
+		'SOME-ID optional { }', { length:20, TAGS: 'SOME-ID', ANY: '{ }', validators: { validator: [ { case:'optional' }]} },
+		'SOME-ID is-net(ip,ip-mask) { }', { length:30, TAGS: 'SOME-ID', ANY: '{ }', validators: { validator: [ { case:'is-net', ip:'ip', 'mask':'ip-mask' }]} },
+		'SOME-ID is-net(ip,ip-mask),optional { }', { length:39, TAGS: 'SOME-ID', ANY: '{ }', validators: { validator: [ { case:'is-net', ip:'ip', 'mask':'ip-mask' }, { case:'optional' }]} }
 	]);
 
 	massive_fails('bad expressions ['+src+']', tester, [
