@@ -42,68 +42,71 @@ function UiScheme(ui) {
 	if (!ui.children)
 		return;
 
+	var last_node;
+
 	function ui_lex(node) {
 		// LEXIDs SP ANY
 		var text = node.args;
 		if (!text)
-			throw SyntaxError('lex hasn`t LEXIDs in the row '+node.srow);
+			throw SyntaxError('lex hasn`t LEXIDs');
 		LEXIDs.lastIndex = 0;
 		var lexids = LEXIDs.exec(text);
 		if (!lexids || !lexids[0])
-			throw SyntaxError('lex: bad LEXIDs in the row '+node.srow);
+			throw SyntaxError('lex: bad LEXIDs');
 		SP.lastIndex = LEXIDs.lastIndex;
 		SP.exec(text);
 		ANY.lastIndex = SP.lastIndex;
 		var any = ANY.exec(text);
 		if (!any || !any[0])
-			throw SyntaxError('lex: missed regexp in the row '+node.srow);
+			throw SyntaxError('lex: missed regexp');
 		defs.lex(lexids[0], any[0]);
 		if (node.children)
-			throw Error(node.id+': has children nodes in the row '+node.srow);
+			throw Error(node.id+': has children nodes');
 	}
 
 	function def_seq(node, def) {
 		if (!node.args)
-			throw SyntaxError(node.id+': missed sequence text in the row '+node.srow);
+			throw SyntaxError(node.id+': missed sequence text');
 		def.seq(node.args);
 		if (node.children)
-			throw Error(node.id+': has children nodes in the row '+node.srow);
+			throw Error(node.id+': has children nodes');
 	}
 	function def_case(node, def) {
 		// TAGS SP ANY
 		var node_args = node.args;
 		if (!node_args)
-			throw SyntaxError(node.id+': missed TAGS list in the row '+node.srow);
+			throw SyntaxError(node.id+': missed TAGS list');
 		TAGS.lastIndex = 0;
 		var tags = TAGS.exec(node_args);
 		if (!tags || !tags[0])
-			throw SyntaxError(node.id+': bad TAGS list in the row '+node.srow);
+			throw SyntaxError(node.id+': bad TAGS list');
 		SP.lastIndex = TAGS.lastIndex;
 		SP.exec(node_args);
 		ANY.lastIndex = SP.lastIndex;
 		var any = ANY.exec(node_args);
 		//if (!any || !any[1])
-			//throw SyntaxError(node.id+': missed case expression in the row '+node.srow);
+			//throw SyntaxError(node.id+': missed case expression');
 		def['case'](tags[0], any && any[1] || '');
 		if (node.children)
-			throw Error(node.id+': has children nodes in the row '+node.srow);
+			throw Error(node.id+': has children nodes');
 	}
 
 	function ui_def(node) {
 		var node_args = node.args;
 		if (!node_args)
-			throw SyntaxError(node.id+': missed ID in the row '+node.srow);
+			throw SyntaxError(node.id+': missed ID');
 		ID.lastIndex = 0;
 		var id = ID.exec(node_args);
 		if (!id || !id[0])
-			throw SyntaxError(node.id+': bad ID in the row '+node.srow);
+			throw SyntaxError(node.id+': bad ID');
 		if (ID.lastIndex < node_args.length)
-			throw SyntaxError(node.id+': extra symbols after ID in the row '+node.srow);
+			throw SyntaxError(node.id+': extra symbols after ID');
 
 		var def = defs.def(id[1]);
 
 		if (node.children)
 			node.children.forEach(function (snode) {
+				last_node = snode;
 				switch (snode.id) {
 				case 'seq':
 					def_seq(snode, def);
@@ -112,7 +115,7 @@ function UiScheme(ui) {
 					def_case(snode, def);
 					break;
 				default:
-					throw SyntaxError('not allowed node type: ['+snode.id+'] in the row '+snode.srow);
+					throw SyntaxError('not allowed node type: ['+snode.id+']');
 				}
 			});
 	}
@@ -121,11 +124,11 @@ function UiScheme(ui) {
 		// TAGS SP ANY
 		var node_args = node.args;
 		if (!node_args)
-			throw SyntaxError(node.id+': missed TAGS list in the row '+node.srow);
+			throw SyntaxError(node.id+': missed TAGS list');
 		TAGS.lastIndex = 0;
 		var tags = TAGS.exec(node_args);
 		if (!tags || !tags[0])
-			throw SyntaxError(node.id+': bad TAGS list in the row '+node.srow);
+			throw SyntaxError(node.id+': bad TAGS list');
 		SP.lastIndex = TAGS.lastIndex;
 		SP.exec(node_args);
 		ANY.lastIndex = SP.lastIndex;
@@ -141,13 +144,14 @@ function UiScheme(ui) {
 		var sub = rule.add(tags[0].split(/\s*\|\s*/), args);
 		if (node.children)
 			node.children.forEach(function (snode) {
+				last_node = snode;
 				switch (snode.id) {
 				case 'rule':
 				case 'children':
 					ui_rule(snode, sub);
 					break;
 				default:
-					throw SyntaxError('not allowed node type: ['+snode.id+'] in the row '+snode.srow);
+					throw SyntaxError('not allowed node type: ['+snode.id+']');
 				}
 			});
 		return sub;
@@ -156,25 +160,33 @@ function UiScheme(ui) {
 	var self = this;
 
 	ui.children.forEach(function (node) {
-		switch (node.id) {
-		case 'lex':
-			ui_lex(node);
-			break;
+		last_node = node;
+		try {
+			switch (node.id) {
+			case 'lex':
+				ui_lex(node);
+				break;
 
-		case 'def':
-			ui_def(node);
-			break;
+			case 'def':
+				ui_def(node);
+				break;
 
-		case 'rule':
-			ui_rule(node, common_rules);
-			break;
+			case 'rule':
+				ui_rule(node, common_rules);
+				break;
 
-		case 'root-rule':
-			ui_rule(node, root_rules)
-			break;
+			case 'root-rule':
+				ui_rule(node, root_rules)
+				break;
 
-		default:
-			throw SyntaxError('not allowed scheme root node type: ['+node.id+'] in the row '+node.srow);
+			default:
+				throw SyntaxError('not allowed scheme root node type: ['+node.id+']');
+			}
+		} catch (e) {
+			/* istanbul ignore else */
+			if (last_node)
+				e.message += ' in the row '+last_node.srow;
+			throw e;
 		}
 	});
 
