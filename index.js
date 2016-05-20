@@ -239,8 +239,11 @@ UiScheme.prototype = {
 		function walk(rules, ui) {
 			var tag = ui.id;
 
-			if (!ui.children)
+			if (!ui.children) {
+				if (rules.some(function (rule) { return !!rule.rules; }))
+					ui.children = [];
 				return 1;
+			}
 
 			var children = ui.children;
 			for (var i = 0, n = children.length; i < n; ++i) {
