@@ -67,6 +67,7 @@ suite('parse sequences', function () {
 		'TAGS | SP?', [ 'set', [ 'lex', 'TAGS', defs.lexemes.TAGS ], [ '?', [ 'lex', 'SP', defs.lexemes.SP ] ] ],
 		'(TAGS | SP?)', [ 'set', [ 'lex', 'TAGS', defs.lexemes.TAGS ], [ '?', [ 'lex', 'SP', defs.lexemes.SP ] ] ],
 		'ID (SP ANY)?', [ 'seq', [ 'lex', 'ID', defs.lexemes.ID ], [ '?', [ 'seq', [ 'lex', 'SP', defs.lexemes.SP ], [ 'lex', 'ANY', defs.lexemes.ANY ] ] ] ],
+		'ID (SP ANY?)?', [ 'seq', [ 'lex', 'ID', defs.lexemes.ID ], [ '?', [ 'seq', [ 'lex', 'SP', defs.lexemes.SP ], [ '?', [ 'lex', 'ANY', defs.lexemes.ANY ] ] ] ] ],
 		'ID ID | SP ANY', [ 'set', [ 'seq', [ 'lex', 'ID', defs.lexemes.ID ], [ 'lex', 'ID', defs.lexemes.ID ] ], [ 'seq', [ 'lex', 'SP', defs.lexemes.SP ], [ 'lex', 'ANY', defs.lexemes.ANY ] ] ]
 	]);
 
@@ -97,7 +98,9 @@ suite('parse sequences', function () {
 		'TAGS ANY?', 'TAGS ANY?',
 		'(TAGS ANY?)', 'TAGS ANY?',
 		'ID (SP ANY)?', 'ID (SP ANY)?',
+		'ID (SP ANY?)?', 'ID (SP ANY?)?',
 		'  ID  (  SP  ANY  )  ? ', 'ID (SP ANY)?',
+		'  ID  (  SP  ANY?  )  ? ', 'ID (SP ANY?)?',
 		'  ID  (  SP  |  ANY  )  ? ', 'ID (SP | ANY)?'
 	]);
 
@@ -107,6 +110,7 @@ function newDefsLib() {
 	var defs = new DefsLib();
 	defs.lex('SP', '\\s+');
 	defs.lex('COMMA', ',');
+	defs.lex('DD', '\.\.\s*');
 	defs.lex('SLASH', '\\/');
 	defs.lex('BR-OPEN', '\\(');
 	defs.lex('BR-CLOSE', '\\)');
@@ -115,7 +119,7 @@ function newDefsLib() {
 	defs.lex('ID|ip|mask|net-ip|net-mask|nets|begin|end|value|list|id', '([A-Za-z_][A-Za-z0-9_-]*)');
 	defs.lex('TAGS', '([a-zA-Z0-9_-]+(?:\s*\|\s*[a-zA-Z0-9_-]+)*)');
 	defs.lex('OPT', '([a-z][a-z0-9_]*)');
-	defs.lex('VALUE', '(\\d+)');
+	defs.lex('VALUE', '(\\d+)\s*');
 	defs.lex('BOUNDS', '(-?\\d{1,5}|)\\.\\.(-?\\d{1,5}|)');
 	defs.lex('LEXIDS', '([A-Z0-9_-]+(?:\\s*\\|\\s*[A-Z0-9_-]+)*)');
 
@@ -344,6 +348,27 @@ suite('compile to parser 11 choices', function () {
 		'SOME-ID(OLOLO)', { length:14, ID: 'SOME-ID', id: 'OLOLO' },
 		'SOME-ID ( OLOLO ) ', { length:18, ID: 'SOME-ID', id: 'OLOLO' },
 		'SOME-ID ', { length:8, ID: 'SOME-ID' }
+	]);
+
+	massive_fails('bad expressions ['+src+']', tester, [
+		'SOME-ID (', SyntaxError,
+		'SOME-ID (5', SyntaxError,
+		'SOME-ID (aass', SyntaxError,
+		'SOME-ID ()', SyntaxError,
+		'SOME-ID )', SyntaxError
+	]);
+});
+
+
+
+suite('compile to parser 12 optionals', function () {
+	var src = 'VALUE (DD VALUE?)?',
+	    tester = newTester(src);
+
+	massive('good expressions ['+src+']', tester, [
+		'5', { length:1, VALUE: [ '5' ] },
+		'5..', { length:3, VALUE: [ '5' ] },
+		'4..5', { length:4, VALUE: [ '4', '5' ] }
 	]);
 
 	massive_fails('bad expressions ['+src+']', tester, [

@@ -224,7 +224,7 @@ UiScheme.prototype = {
 							var args = ui.args || '',
 							    o = rule.args(args);
 							if (o.error)
-								throw SyntaxError('node ['+tag+'] arguments('+args+') error in the row '+ui.srow + '('+o.error.message+')');
+								throw SyntaxError('node ['+tag+'] arguments('+args+') error in the row '+ui.srow + ': '+o.error.message);
 							if (!validate)
 								ui.args = o;
 						}
