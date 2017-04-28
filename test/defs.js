@@ -64,7 +64,10 @@ suite('parse sequences', function () {
 		' TAGS SP ANY', [ 'seq', [ 'lex', 'TAGS', defs.lexemes.TAGS ], [ 'lex', 'SP', defs.lexemes.SP ], [ 'lex', 'ANY', defs.lexemes.ANY ] ],
 		'TAGS ANY?', [ 'seq', [ 'lex', 'TAGS', defs.lexemes.TAGS ], [ '?', [ 'lex', 'ANY', defs.lexemes.ANY ] ] ],
 		'(TAGS SP?)', [ 'seq', [ 'lex', 'TAGS', defs.lexemes.TAGS ], [ '?', [ 'lex', 'SP', defs.lexemes.SP ] ] ],
-		'ID (SP ANY)?', [ 'seq', [ 'lex', 'ID', defs.lexemes.ID ], [ '?', [ 'seq', [ 'lex', 'SP', defs.lexemes.SP ], [ 'lex', 'ANY', defs.lexemes.ANY ] ] ] ]
+		'TAGS | SP?', [ 'set', [ 'lex', 'TAGS', defs.lexemes.TAGS ], [ '?', [ 'lex', 'SP', defs.lexemes.SP ] ] ],
+		'(TAGS | SP?)', [ 'set', [ 'lex', 'TAGS', defs.lexemes.TAGS ], [ '?', [ 'lex', 'SP', defs.lexemes.SP ] ] ],
+		'ID (SP ANY)?', [ 'seq', [ 'lex', 'ID', defs.lexemes.ID ], [ '?', [ 'seq', [ 'lex', 'SP', defs.lexemes.SP ], [ 'lex', 'ANY', defs.lexemes.ANY ] ] ] ],
+		'ID ID | SP ANY', [ 'set', [ 'seq', [ 'lex', 'ID', defs.lexemes.ID ], [ 'lex', 'ID', defs.lexemes.ID ] ], [ 'seq', [ 'lex', 'SP', defs.lexemes.SP ], [ 'lex', 'ANY', defs.lexemes.ANY ] ] ]
 	]);
 
 	massive_fails('bad expressions', parser, [
@@ -81,6 +84,8 @@ suite('parse sequences', function () {
 		'ID (SP OLO?', SyntaxError,
 		'ID (SP ANY?', SyntaxError,
 		'ID (?', SyntaxError,
+		'ID (ID|)', SyntaxError,
+		'ID )', SyntaxError,
 		Object.create(null), TypeError
 	]);
 
@@ -88,10 +93,12 @@ suite('parse sequences', function () {
 		'TAGS', 'TAGS',
 		' TAGS ', 'TAGS',
 		' TAGS SP ANY', 'TAGS SP ANY',
+		' TAGS | SP |ANY', 'TAGS | SP | ANY',
 		'TAGS ANY?', 'TAGS ANY?',
 		'(TAGS ANY?)', 'TAGS ANY?',
 		'ID (SP ANY)?', 'ID (SP ANY)?',
-		'  ID  (  SP  ANY  )  ? ', 'ID (SP ANY)?'
+		'  ID  (  SP  ANY  )  ? ', 'ID (SP ANY)?',
+		'  ID  (  SP  |  ANY  )  ? ', 'ID (SP | ANY)?'
 	]);
 
 });
@@ -104,6 +111,7 @@ function newDefsLib() {
 	defs.lex('BR-OPEN', '\\(');
 	defs.lex('BR-CLOSE', '\\)');
 	defs.lex('ANY', '(.+)');
+	defs.lex('plus', '(\\+)');
 	defs.lex('ID|ip|mask|net-ip|net-mask|nets|begin|end|value|list|id', '([A-Za-z_][A-Za-z0-9_-]*)');
 	defs.lex('TAGS', '([a-zA-Z0-9_-]+(?:\s*\|\s*[a-zA-Z0-9_-]+)*)');
 	defs.lex('OPT', '([a-z][a-z0-9_]*)');
@@ -283,6 +291,71 @@ suite('compile to parser 8 repeats', function () {
 		'SOME-ID ', SyntaxError
 	]);
 });
+
+suite('compile to parser 9 choices', function () {
+	var src = 'ID SP? BR-OPEN SP? (ID|VALUE) SP? BR-CLOSE SP?',
+	    tester = newTester(src);
+
+	massive('good expressions ['+src+']', tester, [
+		'SOME-ID(5)', { length:10, ID: [ 'SOME-ID' ], VALUE: '5' },
+		'SOME-ID(OLOLO)', { length:14, ID: [ 'SOME-ID', 'OLOLO' ] },
+		'SOME-ID ( OLOLO ) ', { length:18, ID: [ 'SOME-ID', 'OLOLO' ] }
+	]);
+
+	massive_fails('bad expressions ['+src+']', tester, [
+		'SOME-ID ', SyntaxError,
+		'SOME-ID (', SyntaxError,
+		'SOME-ID (5', SyntaxError,
+		'SOME-ID (aass', SyntaxError,
+		'SOME-ID ()', SyntaxError,
+		'SOME-ID )', SyntaxError
+	]);
+});
+
+
+suite('compile to parser 10 choices', function () {
+	var src = 'ID SP? BR-OPEN SP? ( id | VALUE ) SP? BR-CLOSE SP?',
+	    tester = newTester(src);
+
+	massive('good expressions ['+src+']', tester, [
+		'SOME-ID(5)', { length:10, ID: 'SOME-ID', VALUE: '5' },
+		'SOME-ID(OLOLO)', { length:14, ID: 'SOME-ID', id: 'OLOLO' },
+		'SOME-ID ( OLOLO ) ', { length:18, ID: 'SOME-ID', id: 'OLOLO' }
+	]);
+
+	massive_fails('bad expressions ['+src+']', tester, [
+		'SOME-ID ', SyntaxError,
+		'SOME-ID (', SyntaxError,
+		'SOME-ID (5', SyntaxError,
+		'SOME-ID (aass', SyntaxError,
+		'SOME-ID ()', SyntaxError,
+		'SOME-ID )', SyntaxError
+	]);
+});
+
+
+suite('compile to parser 11 choices', function () {
+	var src = 'ID SP? (BR-OPEN SP? ( id | VALUE | plus ) SP? BR-CLOSE SP?)?',
+	    tester = newTester(src);
+
+	massive('good expressions ['+src+']', tester, [
+		'SOME-ID(5)', { length:10, ID: 'SOME-ID', VALUE: '5' },
+		'SOME-ID(+)', { length:10, ID: 'SOME-ID', plus: '+' },
+		'SOME-ID(OLOLO)', { length:14, ID: 'SOME-ID', id: 'OLOLO' },
+		'SOME-ID ( OLOLO ) ', { length:18, ID: 'SOME-ID', id: 'OLOLO' },
+		'SOME-ID ', { length:8, ID: 'SOME-ID' }
+	]);
+
+	massive_fails('bad expressions ['+src+']', tester, [
+		'SOME-ID (', SyntaxError,
+		'SOME-ID (5', SyntaxError,
+		'SOME-ID (aass', SyntaxError,
+		'SOME-ID ()', SyntaxError,
+		'SOME-ID )', SyntaxError
+	]);
+});
+
+
 
 function newDefSeqTester(name, dseq, seq) {
 	var defs = newDefsLib(),
