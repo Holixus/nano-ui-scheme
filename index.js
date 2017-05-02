@@ -241,7 +241,7 @@ UiScheme.prototype = {
 
 			if (!ui.children) {
 				if (rules.some(function (rule) { return !!rule.rules; }))
-					ui.children = [];
+					ui.children = []; // fix of childless nodes if found a rule has child
 				return 1;
 			}
 

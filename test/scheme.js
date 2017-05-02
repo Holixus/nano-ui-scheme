@@ -102,6 +102,7 @@ root-rule lex|root-rule|rule|def\n\
 		'lex ID', SyntaxError,
 		'lex ID ', SyntaxError,
 		'lex ID a\n\tchild', Error,
+		'lex ID a\nlex ID b', Error, // lex redefinition
 		'root-rule', SyntaxError,
 		'root-rule {}', SyntaxError,
 		'root-rule ogo sp', SyntaxError,
@@ -115,6 +116,7 @@ root-rule lex|root-rule|rule|def\n\
 		'def erer\n\tcase oo\n\t\tchild\n', Error,
 		'def erer\n\tseq\n', SyntaxError,
 		'def erer\n\tseq >\n', SyntaxError,
+		'def erer\ndef erer\n', Error, // def redefinition
 		'lex ID a\ndef erer\n\tseq ID\n\t\tchild oo\n', Error,
 		'root-rule ogo\n\tnot\n', SyntaxError
 	]);
