@@ -381,6 +381,100 @@ suite('compile to parser 12 optionals', function () {
 });
 
 
+suite('compile to parser 13 subsequences', function () {
+	var src = 'ID COMMA VALUE|id DD SLASH',
+	    tester = newTester(src);
+
+	massive('good expressions ['+src+']', tester, [
+		'AAA,55', { length:6, ID:'AAA', VALUE: '55' },
+		'BBB../', { length:6, id:'BBB' }
+	]);
+
+	massive_fails('bad expressions ['+src+']', tester, [
+		'SOME-ID (', SyntaxError,
+		'SOME-ID (5', SyntaxError,
+		'SOME-ID (aass', SyntaxError,
+		'SOME-ID ()', SyntaxError,
+		'SOME-ID )', SyntaxError
+	]);
+});
+
+
+suite('compile to parser 13 lists', function () {
+	var src = 'ID|ID',
+	    tester = newTester(src);
+
+	massive('good expressions ['+src+']', tester, [
+		'AAA', { length:3, ID:'AAA' }
+	]);
+
+	massive_fails('bad expressions ['+src+']', tester, [
+		'5', SyntaxError
+	]);
+});
+
+suite('compile to parser 14 lists', function () {
+	var src = 'ID SP (ID|VALUE (SP VALUE)*)',
+	    tester = newTester(src);
+
+	massive('good expressions ['+src+']', tester, [
+		'AAA BBB', { length:7, ID: [ 'AAA', 'BBB' ] },
+		'AAA 45', { length:6, ID: [ 'AAA' ], VALUE: [ '45' ] },
+		'AAA 45 22', { length:9, ID: [ 'AAA' ], VALUE: [ '45', '22' ] }
+	]);
+
+	massive_fails('bad expressions ['+src+']', tester, [
+		'5', SyntaxError,
+		'AA', SyntaxError,
+		'AA ', SyntaxError,
+		'AA BB CC', SyntaxError,
+		'AA 44 DD', SyntaxError
+	]);
+});
+
+
+suite('compile to parser 15 lists', function () {
+	var src = 'id SP (ID|VALUE (SP VALUE)*)',
+	    tester = newTester(src);
+
+	massive('good expressions ['+src+']', tester, [
+		'AAA BBB', { length:7, id: 'AAA', ID: 'BBB' },
+		'AAA 45', { length:6, id: 'AAA', VALUE: [ '45' ] },
+		'AAA 45 22', { length:9, id: 'AAA', VALUE: [ '45', '22' ] }
+	]);
+
+	massive_fails('bad expressions ['+src+']', tester, [
+		'5', SyntaxError,
+		'AA', SyntaxError,
+		'AA ', SyntaxError,
+		'AA BB CC', SyntaxError,
+		'AA 44 DD', SyntaxError
+	]);
+});
+
+suite('compile to parser 16 lists', function () {
+	var src = 'id (SP (ID|VALUE))+',
+	    tester = newTester(src);
+
+	massive('good expressions ['+src+']', tester, [
+		'AAA BBB', { length:7, id: 'AAA', ID: [ 'BBB' ] },
+		'AAA 45', { length:6, id: 'AAA', VALUE: [ '45' ] },
+		'AAA 45 22', { length:9, id: 'AAA', VALUE: [ '45', '22' ] },
+		'AAA BBB CC', { length:10, id: 'AAA', ID: [ 'BBB', 'CC' ] },
+		'AAA 45 CC', { length:9, id: 'AAA', VALUE: [ '45' ], ID: [ 'CC' ] },
+		'AAA 45 DD 22', { length:12, id: 'AAA', VALUE: [ '45', '22' ], ID: [ 'DD' ] }
+	]);
+
+	massive_fails('bad expressions ['+src+']', tester, [
+		'5', SyntaxError,
+		'AA', SyntaxError,
+		'AA ', SyntaxError,
+		'AA BB. CC', SyntaxError,
+		'AA 44 DD,', SyntaxError
+	]);
+});
+
+
 
 function newDefSeqTester(name, dseq, seq) {
 	var defs = newDefsLib(),
