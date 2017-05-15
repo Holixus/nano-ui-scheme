@@ -1,6 +1,6 @@
 {
   "name": "nano-ui-scheme",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "UI-files scheme compiler and validator",
   "main": "index.js",
   "scripts": {
