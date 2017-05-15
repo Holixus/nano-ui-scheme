@@ -118,6 +118,8 @@ root-rule lex|root-rule|rule|def\n\
 		'def erer\n\tseq >\n', SyntaxError,
 		'def erer\ndef erer\n', Error, // def redefinition
 		'lex ID a\ndef erer\n\tseq ID\n\t\tchild oo\n', Error,
+		'lex ONE a\ndef ONE\nseq ONE\n', Error,
+		'lex ONE a\ndef TWO\n\tseq ONE\nlex TWO .\n', Error,
 		'root-rule ogo\n\tnot\n', SyntaxError
 	]);
 });
