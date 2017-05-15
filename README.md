@@ -12,21 +12,36 @@ UI-files scheme compiler and validator
 
 ## Scheme of ui-scheme
 ```
-lex LEXIDS         ([A-Za-z0-9_-]+(?:\s*\|\s*[A-Za-z0-9_-]+)*)
-lex DEFID          ([A-Za-z0-9_-]+)
-lex TAGS|CHILDREN  ([a-zA-Z0-9_-]+(?:\s*\|\s*[a-zA-Z0-9_-]+)*)
-lex SP             \s+
-lex ARGUMENTS|ANY  (.+)
+lex DEFID|TAG|LEXID ([A-Za-z0-9_-]+)\s*
+lex PIPE            \|\s*
+lex REGEXP          (.+)
 
-rule lex LEXIDS SP ARGUMENTS
+lex POSTOP         ([?+-])\s*
+lex BROP           \(\s*
+lex BRCL           \)\s*
+
+def GROUP
+	seq BROP EXPR BRCL
+	seq DEFID|LEXID
+
+def POSTFIX
+	seq GROUP POSTOP?
+
+def SEQ
+	seq POSTFIX+
+
+def EXPR
+	seq SEQ (PIPE SEQ)*
+
+rule lex LEXID (PIPE LEXID)* REGEXP
 
 rule def DEFID
-	rule seq ANY
-	rule case TAGS SP ANY
+	rule seq SEQ
+	rule case TAG (PIPE TAG)* SEQ
 
-rule rule TAGS SP ARGUMENTS
+rule rule TAG (PIPE TAG)* ARGUMENTS
 	children rule
-	rule children TAGS
+	rule children TAG (PIPE TAG)*
 
 root-rule lex | root-rule | rule | def
 ```
